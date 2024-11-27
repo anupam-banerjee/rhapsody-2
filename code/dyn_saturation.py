@@ -167,6 +167,33 @@ def calculate_hinge_distance(preprocessed_pdb_path, chain, mut_res):
             results.append("NA")  # Extend with NA if there's an error
     return results
 
+def save_selected_features(output_file):
+    try:
+        # Define the top 21 feature indices (0-based relative to feature vector starting at the 5th column)
+        top_21_feature_indices = [54, 56, 55, 72, 68, 74, 69, 71, 67, 75, 79, 60, 18, 25, 26, 39, 16, 24, 11, 57, 6]
+
+        # Read the data
+        data = pd.read_csv(output_file, delimiter='\t', header=0)
+        metadata = data.iloc[:, :4]  # First four columns are metadata
+        features = data.iloc[:, 4:]  # Features start from the 5th column
+
+        # Select only the top 21 features in the specified order
+        selected_features = features.iloc[:, top_21_feature_indices]
+
+        # Combine metadata and selected features
+        selected_data = pd.concat([metadata, selected_features], axis=1)
+
+        # Derive output file name
+        output_selected_file = os.path.splitext(output_file)[0] + "_selected21.tsv"
+
+        # Write the processed data to the output file
+        selected_data.to_csv(output_selected_file, sep='\t', index=False)
+
+        logging.info(f"Selected features saved to {output_selected_file}")
+    except Exception as e:
+        logging.error(f"Error processing and saving selected features: {e}")
+
+# The main function and residue analysis logic remains the same
 def main():
     """
     Main function to process input and perform analysis.
@@ -189,8 +216,11 @@ def main():
     else:
         input_file_path = args.input
 
+
+
     df = pd.read_csv(input_file_path, names=['pdb_file_path', 'resnum', 'wt_residue', 'mut'], sep='\t')
 
+    # Write the header to the output file
     # Write the header to the output file
     columns = [
         'pdb_file_path', 'resnum', 'wt_residue', 'mut',
@@ -225,9 +255,13 @@ def main():
     with open(args.output, 'w') as f:
         f.write("\t".join(columns) + "\n")
     
+   
     for _, row in df.iterrows():
         logging.info(f"Processing {row['pdb_file_path']} residue {row['resnum']}...")
         analyze_residue(row, args.output, pdb_folder=args.pdbfolder)
+
+    # Save selected features
+    save_selected_features(args.output)
 
 if __name__ == '__main__':
     main()

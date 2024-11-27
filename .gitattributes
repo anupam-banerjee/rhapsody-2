@@ -1,0 +1,2 @@
+*.seqmsa filter=lfs diff=lfs merge=lfs -text
+*.npz filter=lfs diff=lfs merge=lfs -text
