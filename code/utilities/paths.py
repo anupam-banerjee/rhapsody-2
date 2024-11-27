@@ -1,7 +1,7 @@
 # List of paths to folders and binaries. All folder paths should finish with slash (/)
 
 # Paths required for prediction.
-library_folder = '/data/docu/rhapsody2_exec/scratch_v2a/lib/' # Where the package is located.
+library_folder = '/data/docu/rhapsody2_exec/for_github_revision/code/lib/' # Where the package is located.
 
 # Paths storing ENM data for reuse
 

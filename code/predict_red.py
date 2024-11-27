@@ -42,15 +42,15 @@ X_train, y_train, max_values, min_values = load_training_data('train_red.txt')
 
 # Initialize XGBoost Classifier
 xgb_classifier = XGBClassifier(
-    max_depth=7, 
+    max_depth=11, 
     n_estimators=750, 
     learning_rate=0.02, 
     random_state=42,  
     device='cuda',  # Ensure GPU usage if available
     missing=np.nan,  # Set the missing parameter to handle NaN values
-    colsample_bytree=0.8,
+    colsample_bytree=0.7,
     colsample_bylevel=0.8,
-    colsample_bynode=0.8,
+    colsample_bynode=0.9,
     gamma=1,
     min_child_weight=1,
     reg_alpha=0.5,

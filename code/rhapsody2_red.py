@@ -62,7 +62,8 @@ def main(pdb_file):
     # Run the dyn_saturation.py command
     run_command(f"python dyn_saturation.py -f \"{pdb_filename}\" -o saturation_mutagenesis_dyn.tsv")
     
-    dyn_file = "saturation_mutagenesis_dyn.tsv"
+    dyn_old_file = "saturation_mutagenesis_dyn.tsv"
+    dyn_file = "saturation_mutagenesis_dyn_selected21.tsv"
     psic_file = "saturation_mutagenesis_psic.tsv"
     shannon_file = "saturation_mutagenesis_shannon.tsv"
     rsa_blosum_file = "saturation_mutagenesis_rsa_blosum.tsv"
@@ -109,7 +110,7 @@ def main(pdb_file):
     run_command(f"python replace_bfactor.py \"{pdb_filename}\"")
     
     # Delete the intermediate files
-    delete_files(dyn_file, psic_file, shannon_file, rsa_blosum_file, max_min_file, input_csv, red_file)
+    delete_files(dyn_file, psic_file, shannon_file, rsa_blosum_file, max_min_file, input_csv, red_file, dyn_old_file)
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
