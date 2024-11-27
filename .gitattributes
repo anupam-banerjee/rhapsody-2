@@ -1,1 +1,2 @@
 code/lib/MSA/AF-A1L453-F1-model_v4.seqmsa filter=lfs diff=lfs merge=lfs -text
+code/lib/MSA/AF-A1L4K1-F1-model_v4.seqmsa filter=lfs diff=lfs merge=lfs -text
