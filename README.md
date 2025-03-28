@@ -104,3 +104,7 @@ python rhapsody2_red.py AF-A2A3L6-F1-model_v4.pdb
 - Results are saved in a file named `predictions.txt`.
 - Heatmaps are generated (in 100-residue chunks) to visualize mutation impact.
 - A modified PDB file (`input_file_bfac.pdb`) is created with the B-factor column overwritten by predicted pathogenicity values, providing a structure-based visualization.
+
+## Precomputed features and pathogenicity predictions in future releases
+
+Precomputed PSIC and Shannon entropy files for a majority of human proteins will be made available for download in future releases to streamline the pipeline and reduce runtime. Additionally, precomputed pathogenicity predictions generated using Rhapsody-2 (red) will also be provided, offering users immediate access to mutation impact insights across a wide range of human proteins.
