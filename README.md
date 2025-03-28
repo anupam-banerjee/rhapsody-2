@@ -27,7 +27,7 @@ After running the search:
 2. Rename the file to `{pdb_name}_blast.xml`.
 3. Place it in the `lib/blast` directory.
 
-This bypasses the need to run BLAST over the internet within the pipeline. However, note that the web-based BLAST has a maximum hit limit of 5000, which may be insufficient in cases where DIAMOND yields a larger set of hits based on the same E-value. Therefore, this manual method might not fully approximate the results of a DIAMOND search.
+This bypasses the need to run BLAST over the internet within the pipeline. However, note that the web-based BLAST has a maximum hit limit of 5000, which may be insufficient in cases where DIAMOND yields a (much) larger set of hits based on the same E-value. Therefore, this manual method might not fully approximate the results of a DIAMOND search.
 
 ### File Management and Cleanup
 
