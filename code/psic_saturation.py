@@ -136,36 +136,51 @@ def perform_blast_search(sequence, expect=0.001, hitlist_size=50000, blast_file=
         with open("blast_results.xml", "w") as out_handle:
             out_handle.write(result_handle.read())
     result_handle.close()
-
 def parse_blast_msa(blast_file, seq, msa_out_path):
     """Parse BLAST results and write MSA file, even from a potentially corrupted XML file."""
     from Bio.Blast import NCBIXML  # for parsing XML
-    import tempfile
-    
+
     print("Parsing BLAST results and creating MSA file...")
 
     seq_length = len(seq)
+    if seq_length == 0:
+        raise ValueError("Input sequence is empty. Cannot calculate coverage.")
+
     with open(msa_out_path, "w") as fp:
         try:
             with open(blast_file, "r") as blast_handle:
                 blast_records = NCBIXML.parse(blast_handle)
-                
+
                 for blast_record in blast_records:
                     for ali in blast_record.alignments:
                         for hsp in ali.hsps:
                             query_cover = (hsp.query_end - hsp.query_start + 1) / seq_length * 100
                             if query_cover >= 30 and hsp.expect <= 0.001:
-                                pre_seq = '-' * (hsp.query_start - 1)
-                                pos_seq = '-' * max(0, (seq_length - hsp.query_end))
-                                seq_match = ''.join(hsp.sbjct[count] for count, ele in enumerate(hsp.query) if ele != '-')
-                                aligned_seq = pre_seq + seq_match + pos_seq
+                                query_pos = hsp.query_start - 1  # 0-based start index
+
+                                # Build aligned sequence keeping gaps
+                                aligned_region = ''
+                                for q_char, s_char in zip(hsp.query, hsp.sbjct):
+                                    if q_char == '-':
+                                        aligned_region += '-'  # gap in query
+                                    else:
+                                        aligned_region += s_char  # subject character or gap
+
+                                # Pad to match full query length
+                                pre_pad = '-' * query_pos
+                                post_pad = '-' * (seq_length - hsp.query_end)
+                                aligned_seq = pre_pad + aligned_region + post_pad
+
+                                # Trim or pad to exactly match query length
+                                aligned_seq = aligned_seq[:seq_length].ljust(seq_length, '-')
+
                                 fp.write(aligned_seq + '\n')
+
         except Exception as e:
             print(f"An error occurred during parsing: {e}")
             print("Continuing with the valid entries parsed so far.")
 
     print(f"MSA file created at {msa_out_path}")
-
 
 
 def precompute_frequencies(msa_file):
@@ -345,7 +360,7 @@ def main():
             else:
                 # If MSA file is also not found, perform BLAST search to generate MSA
                 print("MSA file not found. Performing BLAST search to generate MSA file...")
-                perform_blast_search(sequence, blast_file=blast_file)
+                #perform_blast_search(sequence, blast_file=blast_file)
                 parse_blast_msa(blast_file, sequence, msa_out_path)
                 print("Precomputing frequencies...")
                 precomputed_data = precompute_frequencies(msa_out_path)
@@ -359,7 +374,7 @@ def main():
                     raise ValueError(f"Validation failed: The BLAST XML file {blast_file} saved with the same name does not correspond to the present input.")
             else:
                 print("BLAST XML file not found. Performing BLAST search...")
-                perform_blast_search(sequence, blast_file=blast_file)
+                #perform_blast_search(sequence, blast_file=blast_file)
 
         # Generate saturation mutagenesis features
         generate_saturation_mutagenesis_features(pdb_file, sequence, precomputed_folder, output_file)
