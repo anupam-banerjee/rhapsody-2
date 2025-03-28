@@ -7,6 +7,20 @@ This repository contains Python scripts designed to predict the pathogenicity pr
 Features
 
 DIAMOND BLAST Integration: The scripts utilize DIAMOND to perform BLAST searches on the nr database with an e-value of 0.001, specifically targeting human protein structures resolved by AlphaFold2. All hits meeting this e-value threshold are used to calculate PSIC and Shannon entropy features. To facilitate integration, the pipeline approximates this process by conducting a BLAST search over the internet using the same e-value and a maximum hit size of 50,000. This step can be time-consuming depending on the protein size and server load. A timeout mechanism ensures that if BLAST results are not generated within 5 minutes, the script defaults to dynamics-only predictions. Precomputed PSIC and Shannon entropy files for human proteins will be made available in future releases to expedite this process.
+
+### Optional: Manual BLAST Search
+
+Alternatively, users can perform the BLAST search manually at [NCBI BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE=Proteins) using the **nr** database. Set the **E-value threshold** to `0.001` and adjust the **Max target sequences** to `5000` under the *Algorithm parameters* section. 
+
+After running the search:
+
+1. Download the results in **XML format**.
+2. Rename the file to `{pdb_name}_blast.xml`.
+3. Place it in the `lib/blast` directory.
+
+This allows users to skip running the BLAST search programmatically over the internet. However, note that the web-based BLAST has a hit limit of 5000, which may not be sufficient when compared to a DIAMOND search with the same E-value threshold. In such cases, the limited output may not fully approximate the results obtained via DIAMOND.
+
+
 File Management and Cleanup: The rhapsody2_red.py script ensures that all necessary files are present, copying them to the current directory if needed, and removing intermediate files after processing is complete.
 Feature Calculation: The script computes various dynamics and evolutionary features, including PSIC and Shannon entropy, which are essential for pathogenicity predictions.
 Consolidation and Prediction: After feature computation, the results are consolidated into a single file, which is then used for final pathogenicity predictions.
