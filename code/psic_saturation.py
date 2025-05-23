@@ -46,30 +46,27 @@ def validate_seqmsa_and_json_with_pdb(seqmsa_file, json_file, pdb_sequence):
 
     # First, attempt to validate using the JSON file
     print(f"Loading and processing {json_file}...")
-    try:
-        with open(json_file, 'r') as f:
-            json_data = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: JSON file {json_file} not found.")
-        return False
-    except Exception as e:
-        print(f"Error processing JSON file {json_file}: {e}")
-        return False
-    
-    position_freqs_length = len(json_data.get('position_freqs', []))
-    print(f"Length of position_freqs in {json_file}: {position_freqs_length}")
-
-    # Compare lengths with the PDB sequence length
     pdb_sequence_length = len(pdb_sequence)
     print(f"Length of PDB sequence: {pdb_sequence_length}")
 
-    if position_freqs_length == pdb_sequence_length:
-        print("Validation successful with JSON file: The lengths match with the PDB sequence.")
-        return True
+    try:
+        with open(json_file, 'r') as f:
+            json_data = json.load(f)
+        position_freqs_length = len(json_data.get('position_freqs', []))
+        print(f"Length of position_freqs in {json_file}: {position_freqs_length}")
 
-    print(f"Validation failed: Length of position_freqs ({position_freqs_length}) does not match PDB sequence length ({pdb_sequence_length}).")
-    print(f"Proceeding to validate MSA file as fallback...")
+        # Compare lengths with the PDB sequence length
+        if position_freqs_length == pdb_sequence_length:
+            print("Validation successful with JSON file: The lengths match with the PDB sequence.")
+            return True
 
+        print(f"Validation failed: Length of position_freqs ({position_freqs_length}) does not match PDB sequence length ({pdb_sequence_length}).")
+        print(f"Proceeding to validate MSA file as fallback...")
+    except FileNotFoundError:
+        print(f"Error: JSON file {json_file} not found.")
+    except Exception as e:
+        print(f"Error processing JSON file {json_file}: {e}")
+    
     # If JSON validation fails, proceed to validate the MSA file
     if not os.path.isfile(seqmsa_file):
         print(f"Error: MSA file {seqmsa_file} not found.")
@@ -310,7 +307,6 @@ def generate_saturation_mutagenesis_features(pdb_file, sequence, precomputed_fol
         f.write("PDB_File\tResidue_Number\tWT_Residue\tMutation\tWT_Seq_PSIC\tWT_PhyChem_Group_Seq_PSIC\tWT_Size_Group_Seq_PSIC\tMut_Seq_PSIC\tMut_PhyChem_Group_Seq_PSIC\tMut_Size_Group_Seq_PSIC\tWT-Mut_Seq_PSIC\tWT-Mut_PhyChem_Group_Seq_PSIC\tWT-Mut_Size_Group_Seq_PSIC\n")
         for row in output_data:
             f.write("\t".join(map(str, row)) + "\n")
-
 def main():
     if len(sys.argv) != 3:
         print("Usage: python script.py -f <pdb_file>")
@@ -327,11 +323,11 @@ def main():
         print(f"PDB file {pdb_file} does not exist.")
         return
 
-    precomputed_folder = PSIC_folder  # Use the PSIC folder path
+    precomputed_folder = PSIC_folder
     precomputed_file = os.path.join(precomputed_folder, f"{pdb_name}.seqmsa.json")
     output_file = f"saturation_mutagenesis_psic.tsv"
     blast_file = os.path.join(BLAST_folder, f"{pdb_name}_blast.xml")
-    msa_folder_path = MSA_folder  # Use the MSA folder path
+    msa_folder_path = MSA_folder
     msa_out_path = os.path.join(msa_folder_path, f"{pdb_name}.seqmsa")
 
     if not os.path.exists(precomputed_folder):
@@ -341,7 +337,7 @@ def main():
         print("Extracting sequence from PDB file...")
         sequence = extract_sequence_from_pdb(pdb_file)
 
-        # Check if the JSON (PSIC) file exists and validate it
+        # Case 1: JSON exists and is valid
         if os.path.isfile(precomputed_file):
             print(f"Validating existing positional frequencies file with PDB sequence...")
             valid = validate_seqmsa_and_json_with_pdb(msa_out_path, precomputed_file, sequence)
@@ -349,40 +345,42 @@ def main():
                 print("JSON validation successful, skipping MSA and BLAST steps.")
             else:
                 raise ValueError("Validation failed: The positional frequencies file does not correspond to the present input.")
-        else:
-            # If JSON file does not exist, check for MSA file and proceed
-            print("PSIC file not found, checking MSA file...")
-            if os.path.isfile(msa_out_path):
-                print(f"Validating existing MSA file with PDB sequence...")
-                valid = validate_seqmsa_and_json_with_pdb(msa_out_path, precomputed_file, sequence)
-                if not valid:
-                    raise ValueError("Validation failed: The MSA file saved with the same name does not correspond to the present input.")
-            else:
-                # If MSA file is also not found, perform BLAST search to generate MSA
-                print("MSA file not found. Performing BLAST search to generate MSA file...")
-                #perform_blast_search(sequence, blast_file=blast_file)
-                parse_blast_msa(blast_file, sequence, msa_out_path)
-                print("Precomputing frequencies...")
+
+        # Case 2: JSON missing but MSA exists and is valid
+        elif os.path.isfile(msa_out_path):
+            print(f"Validating existing MSA file with PDB sequence...")
+            valid = validate_seqmsa_and_json_with_pdb(msa_out_path, precomputed_file, sequence)
+            if valid:
+                print("MSA is valid. Proceeding to compute JSON file from MSA...")
                 precomputed_data = precompute_frequencies(msa_out_path)
-                save_precomputed_frequencies(precomputed_folder, pdb_name, precomputed_data)
-
-            # Check or generate the BLAST file if necessary
-            if os.path.isfile(blast_file):
-                print(f"Validating existing BLAST XML file...")
-                valid = validate_blast_xml_with_pdb(blast_file, len(sequence))
-                if not valid:
-                    raise ValueError(f"Validation failed: The BLAST XML file {blast_file} saved with the same name does not correspond to the present input.")
+                if precomputed_data:
+                    save_precomputed_frequencies(precomputed_folder, pdb_name, precomputed_data)
+                else:
+                    raise ValueError("Failed to compute precomputed frequencies from MSA.")
             else:
-                print("BLAST XML file not found. Performing BLAST search...")
-                #perform_blast_search(sequence, blast_file=blast_file)
+                raise ValueError("Validation failed: The MSA file saved with the same name does not correspond to the present input.")
 
-        # Generate saturation mutagenesis features
+        # Case 3: No JSON, no MSA → do BLAST
+        else:
+            print("MSA file not found. Performing BLAST search to generate MSA file...")
+            perform_blast_search(sequence, blast_file=blast_file)
+            parse_blast_msa(blast_file, sequence, msa_out_path)
+            print("Precomputing frequencies...")
+            precomputed_data = precompute_frequencies(msa_out_path)
+            if precomputed_data:
+                save_precomputed_frequencies(precomputed_folder, pdb_name, precomputed_data)
+            else:
+                raise ValueError("Failed to compute precomputed frequencies from newly generated MSA.")
+
+        # Compute features
         generate_saturation_mutagenesis_features(pdb_file, sequence, precomputed_folder, output_file)
         print(f"Features for saturation mutagenesis saved in {output_file}")
+
     except FileNotFoundError as fnf_error:
         print(f"File not found: {fnf_error}")
     except Exception as e:
         print(f"An error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()
