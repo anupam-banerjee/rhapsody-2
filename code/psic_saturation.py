@@ -363,7 +363,10 @@ def main():
         # Case 3: No JSON, no MSA → do BLAST
         else:
             print("MSA file not found. Performing BLAST search to generate MSA file...")
-            perform_blast_search(sequence, blast_file=blast_file)
+            if not os.path.isfile(blast_file):
+                perform_blast_search(sequence, blast_file=blast_file)
+            else:
+                print(f"Pre-existing BLAST XML found at {blast_file}. Skipping BLAST search.")
             parse_blast_msa(blast_file, sequence, msa_out_path)
             print("Precomputing frequencies...")
             precomputed_data = precompute_frequencies(msa_out_path)

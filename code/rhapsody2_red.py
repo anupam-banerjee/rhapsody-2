@@ -18,7 +18,7 @@ def copy_pdb_file(pdb_file, dest_dir):
         shutil.copy(pdb_file, dest_dir)
         print(f"File {pdb_file} copied to {dest_dir}")
 
-def check_file_exists(file_path, timeout=300):
+def check_file_exists(file_path, timeout=1500):
     start_time = time.time()
     while not os.path.exists(file_path):
         if time.time() - start_time > timeout:
@@ -26,7 +26,7 @@ def check_file_exists(file_path, timeout=300):
         time.sleep(5)
     return True
 
-def background_file_check_and_abort(process, file_path, timeout=300):
+def background_file_check_and_abort(process, file_path, timeout=1500):
     if not check_file_exists(file_path, timeout):
         process.terminate()
         print(f"{os.path.basename(file_path)} not created within {timeout} seconds. Aborting.")
@@ -87,9 +87,16 @@ def reverse_map_predictions(results_file, forward_map, output_file):
     df = pd.read_csv(results_file, sep="\t", header=None)
 
     def map_residue_number(res_num):
-        res_num_int = int(res_num)
+        try:
+            res_num_int = int(float(res_num))
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid residue number '{res_num}' encountered during reverse mapping. "
+                             "Check for stale _orinum.pdb files or renumbering errors in the input PDB.")
         original_res = forward_map.get(res_num_int, '')
-        return original_res if original_res else 'NA'
+        if not original_res:
+            raise ValueError(f"Residue number {res_num_int} not found in forward map. "
+                             "The predictions file may not correspond to the current input PDB.")
+        return original_res
 
     df[1] = df[1].apply(map_residue_number)
 
