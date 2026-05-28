@@ -81,6 +81,7 @@ def analyze_residue(row, output_file, pdb_folder=None):
     results = [row['pdb_file_path'], row['resnum'], row['wt_residue'], row['mut']]
     struct = pr.parsePDB(preprocessed_pdb_path)
     chain = struct.getChids()[0]
+    mut_res = row['resnum']
     
     try:
         results.extend(calculate_effectiveness_sensitivity(preprocessed_pdb_path, chain, mut_res))
